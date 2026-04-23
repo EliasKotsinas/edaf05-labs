@@ -5,57 +5,11 @@
 #include <string>
 #include <vector>
 
-int main()
-{
-    std::unordered_map<std::string, std::vector<std::string>> wordMap;
-    std::ifstream wordFile("words.txt");
-    // remove first line of the file
-    std::string firstLine;
-    std::getline(wordFile, firstLine);
-
-    // split first line by space and get the first number which is the number of words in the file
-    std::istringstream iss(firstLine);
-    int wordCount, instructionsCount;
-    iss >> wordCount >> instructionsCount;
-
-    std::string word;
-
-    for (int i = 0; i < wordCount; ++i)
-    {
-        std::getline(wordFile, word);
-
-        wordMap[word] = std::vector<std::string>(); // Initialize the vector for the word
-    }
-    for (const auto &pair : wordMap)
-    {
-        // take four last letters of the word
-        std::string lastFourLetters = pair.first.substr(pair.first.size() - 4);
-        // check if the last four letters are in the each word in the map
-        for (const auto &innerPair : wordMap)
-        {
-            if (innerPair.first.find(lastFourLetters) != std::string::npos)
-            {
-                wordMap[pair.first].push_back(innerPair.first); // Add the word to the vector of the key word
-            }
-        }
-    }
-
-    std::string instruction;
-
-    for (int i = 0; i < instructionsCount; ++i)
-    {
-        std::getline(wordFile, instruction);
-        std::istringstream iss(instruction);
-        std::string startWord, endWord;
-        iss >> startWord >> endWord;
-        std::string result = breadthFirstSearch(wordMap, startWord, endWord);
-        std::cout << result << std::endl;
-    }
-    return 0;
-}
-
 std::string breadthFirstSearch(std::unordered_map<std::string, std::vector<std::string>> &wordMap, const std::string &startWord, const std::string &endWord)
 {
+    if (startWord == endWord)
+        return "0";
+
     std::vector<std::string> queue;
     queue.push_back(startWord);
 
@@ -85,4 +39,61 @@ std::string breadthFirstSearch(std::unordered_map<std::string, std::vector<std::
     }
 
     return "Impossible";
+}
+
+int main()
+{
+    std::unordered_map<std::string, std::vector<std::string>> wordMap;
+    std::vector<std::string> words;
+
+    int wordCount, instructionsCount;
+    std::cin >> wordCount >> instructionsCount;
+
+    for (int i = 0; i < wordCount; ++i)
+    {
+        std::string word;
+        std::cin >> word;
+        words.push_back(word);
+        wordMap[word] = std::vector<std::string>();
+    }
+
+    // Build Graph
+    for (const std::string &w : words)
+    {
+        for (const std::string &innerW : words)
+        {
+            std::string temp = innerW;
+            bool isConnected = true;
+
+            for (size_t k = w.size() - 4; k < w.size(); ++k)
+            {
+                size_t pos = temp.find(w[k]);
+
+                if (pos != std::string::npos)
+                {
+                    temp.erase(pos, 1);
+                }
+                else
+                {
+                    isConnected = false;
+                    break;
+                }
+            }
+
+            if (isConnected)
+            {
+                wordMap[w].push_back(innerW);
+            }
+        }
+    }
+
+    for (int i = 0; i < instructionsCount; ++i)
+    {
+        std::string startWord, endWord;
+        std::cin >> startWord >> endWord;
+        std::string result = breadthFirstSearch(wordMap, startWord, endWord);
+        std::cout << result << std::endl;
+    }
+
+    return 0;
 }
