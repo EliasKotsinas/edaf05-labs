@@ -1,79 +1,89 @@
 #include <iostream>
-#include <unordered_map>
-#include <fstream>
-#include <sstream>
-#include <string>
 #include <vector>
+#include <string>
+#include <queue>
+#include <unordered_map>
+#include <array>
 
-std::string breadthFirstSearch(std::unordered_map<std::string, std::vector<std::string>> &wordMap, const std::string &startWord, const std::string &endWord)
+int bfs(int startId, int endId, const std::vector<std::vector<int>> &adj, int numWords)
 {
-    if (startWord == endWord)
-        return "0";
+    if (startId == endId)
+        return 0;
 
-    std::vector<std::string> queue;
-    queue.push_back(startWord);
+    std::queue<int> q;
+    std::vector<int> distance(numWords, -1);
 
-    std::unordered_map<std::string, bool> visited;
-    std::unordered_map<std::string, int> distance;
+    q.push(startId);
+    distance[startId] = 0;
 
-    visited[startWord] = true;
-    distance[startWord] = 0;
-
-    while (!queue.empty())
+    while (!q.empty())
     {
-        std::string currentWord = queue.front();
-        queue.erase(queue.begin());
-        for (const std::string &neighbor : wordMap[currentWord])
+        int current = q.front();
+        q.pop();
+
+        for (int neighbor : adj[current])
         {
-            if (!visited[neighbor])
+            if (distance[neighbor] == -1)
             {
-                visited[neighbor] = true;
-                queue.push_back(neighbor);
-                distance[neighbor] = distance[currentWord] + 1;
-                if (neighbor == endWord)
+                distance[neighbor] = distance[current] + 1;
+                if (neighbor == endId)
                 {
-                    return std::to_string(distance[neighbor]);
+                    return distance[neighbor];
                 }
+                q.push(neighbor);
             }
         }
     }
-
-    return "Impossible";
+    return -1;
 }
 
 int main()
 {
-    std::unordered_map<std::string, std::vector<std::string>> wordMap;
-    std::vector<std::string> words;
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
 
     int wordCount, instructionsCount;
-    std::cin >> wordCount >> instructionsCount;
+
+    if (!(std::cin >> wordCount >> instructionsCount))
+        return 0;
+
+    std::vector<std::string> words(wordCount);
+    std::unordered_map<std::string, int> wordToId;
+
+    std::vector<std::array<int, 26>> fullWordFreq(wordCount, {0});
+    std::vector<std::array<int, 26>> lastFourFreq(wordCount, {0});
 
     for (int i = 0; i < wordCount; ++i)
     {
-        std::string word;
-        std::cin >> word;
-        words.push_back(word);
-        wordMap[word] = std::vector<std::string>();
+        std::cin >> words[i];
+        wordToId[words[i]] = i;
+
+        for (char c : words[i])
+        {
+            fullWordFreq[i][c - 'a']++;
+        }
+
+        if (words[i].size() >= 4)
+        {
+            for (size_t k = words[i].size() - 4; k < words[i].size(); ++k)
+            {
+                lastFourFreq[i][words[i][k] - 'a']++;
+            }
+        }
     }
 
+    std::vector<std::vector<int>> adj(wordCount);
+
     // Build Graph
-    for (const std::string &w : words)
+    for (int i = 0; i < wordCount; ++i)
     {
-        for (const std::string &innerW : words)
+        for (int j = 0; j < wordCount; ++j)
         {
-            std::string temp = innerW;
             bool isConnected = true;
 
-            for (size_t k = w.size() - 4; k < w.size(); ++k)
+            for (int c = 0; c < 26; ++c)
             {
-                size_t pos = temp.find(w[k]);
-
-                if (pos != std::string::npos)
-                {
-                    temp.erase(pos, 1);
-                }
-                else
+                if (lastFourFreq[i][c] > fullWordFreq[j][c])
                 {
                     isConnected = false;
                     break;
@@ -82,7 +92,7 @@ int main()
 
             if (isConnected)
             {
-                wordMap[w].push_back(innerW);
+                adj[i].push_back(j);
             }
         }
     }
@@ -91,8 +101,20 @@ int main()
     {
         std::string startWord, endWord;
         std::cin >> startWord >> endWord;
-        std::string result = breadthFirstSearch(wordMap, startWord, endWord);
-        std::cout << result << std::endl;
+
+        int startId = wordToId[startWord];
+        int endId = wordToId[endWord];
+
+        int result = bfs(startId, endId, adj, wordCount);
+
+        if (result == -1)
+        {
+            std::cout << "Impossible\n";
+        }
+        else
+        {
+            std::cout << result << "\n";
+        }
     }
 
     return 0;
