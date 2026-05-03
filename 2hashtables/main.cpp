@@ -1,171 +1,225 @@
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <stddef.h>
 #include <stdint.h>
 #include <optional>
 
-class HashTable {
-    private:
-        std::optional<std::string>* keys;
-        std::optional<int>* values;
-        int size;
-        std::string deletedMarker = "<DELETED>";
-    public:
-        HashTable(int size) : size(size), keys(new std::optional<std::string>[size]), values(new std::optional<int>[size]) {}
+enum class State
+{
+    EMPTY,
+    OCCUPIED,
+    TOMBSTONE
+};
 
-    ~HashTable() {
-        delete[] keys;
-        delete[] values;
-    }
-    size_t hashpjw(const std::string& str)
+struct HashEntry
+{
+    std::string key;
+    int value;
+    State state = State::EMPTY;
+};
+
+class HashTable
+{
+private:
+    HashEntry *table;
+    size_t capacity;
+    size_t num_elements;
+
+    size_t hash(const std::string &key)
     {
-        uint32_t h = 0;
-        uint32_t g;
-        for (char c : str) {
-            h = (h << 4) + c;
-            if ((g = h & 0xf0000000)) {
-                h ^= g >> 24;
-                h ^= g;
+        size_t h = 0;
+        for (char c : key)
+        {
+            h = 31 * h + c;
+        }
+        return h % capacity;
+    }
+
+    void rehash()
+    {
+        size_t old_capacity = capacity;
+        HashEntry *old_table = table;
+
+        capacity = capacity * 2;
+        table = new HashEntry[capacity];
+
+        num_elements = 0;
+
+        for (size_t i = 0; i < old_capacity; i++)
+        {
+            if (old_table[i].state == State::OCCUPIED)
+            {
+                size_t index = hash(old_table[i].key);
+
+                while (table[index].state != State::EMPTY)
+                {
+                    index = (index + 1) % capacity;
+                }
+
+                table[index].key = old_table[i].key;
+                table[index].value = old_table[i].value;
+                table[index].state = State::OCCUPIED;
+                num_elements++;
             }
         }
-        return h;
+
+        delete[] old_table;
     }
 
-    bool contains(std::string key) {
-        size_t index = hashpjw(key) % size;
-        for (int i = 0; i < size; i++) {
-            size_t probeIndex = (index + i) % size;
-            if (!keys[probeIndex].has_value() || keys[probeIndex] == deletedMarker) {
-                return false;
+public:
+    HashTable(size_t initial_capacity = 32)
+    {
+        capacity = initial_capacity;
+        num_elements = 0;
+        table = new HashEntry[capacity];
+    }
+
+    ~HashTable()
+    {
+        delete[] table;
+    }
+
+    void insert(const std::string &word)
+    {
+        float load_factor = (float)num_elements / capacity;
+        if (load_factor >= 0.5f)
+        {
+            rehash();
+        }
+
+        size_t index = hash(word);
+        int first_tombstone = -1;
+
+        while (table[index].state != State::EMPTY)
+        {
+            if (table[index].state == State::OCCUPIED)
+            {
+                if (table[index].key == word)
+                {
+                    table[index].value++;
+                    return;
+                }
             }
-            if (keys[probeIndex] == key) {
+            else if (table[index].state == State::TOMBSTONE)
+            {
+                if (first_tombstone == -1)
+                {
+                    first_tombstone = index;
+                }
+            }
+            index = (index + 1) % capacity;
+        }
+
+        size_t insert_index = (first_tombstone != -1) ? first_tombstone : index;
+
+        table[insert_index].key = word;
+        table[insert_index].value = 1;
+        table[insert_index].state = State::OCCUPIED;
+
+        if (first_tombstone == -1)
+        {
+            num_elements++;
+        }
+    }
+
+    void remove(const std::string &word)
+    {
+        size_t index = hash(word);
+
+        while (table[index].state != State::EMPTY)
+        {
+            if (table[index].state == State::OCCUPIED && table[index].key == word)
+            {
+                table[index].state = State::TOMBSTONE;
+                return;
+            }
+            index = (index + 1) % capacity;
+        }
+    }
+
+    bool contains(const std::string &word)
+    {
+        size_t index = hash(word);
+
+        while (table[index].state != State::EMPTY)
+        {
+            if (table[index].state == State::OCCUPIED && table[index].key == word)
+            {
                 return true;
             }
+            index = (index + 1) % capacity;
         }
         return false;
     }
 
-    void insert(std::string key, int value) {
-        size_t index = hashpjw(key) % size;
-        for (int i = 0; i < size; i++) {
-            size_t probeIndex = (index + i) % size;
-            if (!keys[probeIndex].has_value() || keys[probeIndex] == deletedMarker) {
-                keys[probeIndex] = key;
-                values[probeIndex] = value;
-                return;
-            }
-            if (keys[probeIndex] == key) {
-                values[probeIndex] = value;
-                return;
-            }
-        }
-        resize();
-        insert(key, value);
-    }
+    void print_most_frequent()
+    {
+        int max_count = -1;
 
-    void resize() {
-        int newSize = size * 2;
-        std::optional<std::string>* newKeys = new std::optional<std::string>[newSize];
-        std::optional<int>* newValues = new std::optional<int>[newSize];
-        for (int i = 0; i < size; i++) {
-            if (keys[i].has_value() && keys[i] != deletedMarker) {
-                size_t newIndex = hashpjw(keys[i].value()) % newSize;
-                for (int j = 0; j < newSize; j++) {
-                    size_t probeIndex = (newIndex + j) % newSize;
-                    if (!newKeys[probeIndex].has_value()) {
-                        newKeys[probeIndex] = keys[i];
-                        newValues[probeIndex] = values[i];
-                        break;
-                    }
+        std::string best_word = "";
+
+        for (size_t i = 0; i < capacity; i++)
+        {
+            if (table[i].state == State::OCCUPIED)
+            {
+                int count = table[i].value;
+                std::string current_word = table[i].key;
+
+                if (count > max_count)
+                {
+                    max_count = count;
+                    best_word = current_word;
+                }
+                else if (count == max_count && current_word < best_word)
+                {
+                    best_word = current_word;
                 }
             }
         }
-        keys = std::move(newKeys);
-        values = std::move(newValues);
-        size = newSize;
-    }
- 
 
-    void remove(std::string key) {
-        size_t index = hashpjw(key) % size;
-        for (int i = 0; i < size; i++) {
-            size_t probeIndex = (index + i) % size;
-            if (!keys[probeIndex].has_value()) {
-                return;
-            }
-            if (keys[probeIndex] == key) {
-                keys[probeIndex] = deletedMarker;
-                values[probeIndex] = std::nullopt;
-
-                // Rehash subsequent keys in the cluster
-                size_t nextIndex = (probeIndex + 1) % size;
-                while (keys[nextIndex].has_value() && keys[nextIndex] != deletedMarker) {
-                    std::string rehashKey = keys[nextIndex].value();
-                    int rehashValue = values[nextIndex].value();
-                    keys[nextIndex] = std::nullopt;
-                    values[nextIndex] = std::nullopt;
-                    insert(rehashKey, rehashValue);
-                    nextIndex = (nextIndex + 1) % size;
-                }
-                return;
-            }
-        }
-    }
-
-    std::pair<int, std::string> get_max() {
-        int max_value = -1;
-        std::string max_key;
-        for (int i = 0; i < size; ++i) {
-            if (keys[i].has_value() && keys[i] != deletedMarker && values[i].has_value()) {
-                if (values[i].value() > max_value ||
-                    (values[i].value() == max_value && keys[i].value() < max_key)) {
-                    max_value = values[i].value();
-                    max_key = keys[i].value();
-                }
-            }
-        }
-        return {max_value, max_key};
-    }
-
-    int get(std::string key) {
-        size_t index = hashpjw(key) % size;
-        for (int i = 0; i < size; i++) {
-            size_t probeIndex = (index + i) % size;
-            if (!keys[probeIndex].has_value() || keys[probeIndex] == deletedMarker) {
-                return -1;
-            }
-            if (keys[probeIndex] == key) {
-                return values[probeIndex].value();
-            }
-        }
-        return -1;
+        std::cout << best_word << " " << max_count << "\n";
     }
 };
 
-int main() {
-    HashTable ht(16);
-    std::string word;
+int main()
+{
+    HashTable d;
     int i = 0;
+    std::string line;
 
-    while (std::cin >> word) {
-        bool is_present = ht.contains(word);
-        bool remove_it = i % 16 == 0;
+    while (std::getline(std::cin, line))
+    {
+        size_t start = line.find_first_not_of(" \t\r\n");
+        std::string word = "";
+        if (start != std::string::npos)
+        {
+            size_t end = line.find_last_not_of(" \t\r\n");
+            word = line.substr(start, end - start + 1);
+        }
 
-        if (is_present) {
-            if (remove_it) {
-                ht.remove(word);
-            } else {
-                int count = ht.get(word);
-                ht.insert(word, count + 1);
+        bool is_present = d.contains(word);
+        bool remove_it = (i % 16 == 0);
+
+        if (is_present)
+        {
+            if (remove_it)
+            {
+                d.remove(word);
             }
-        } else if (!remove_it) {
-            ht.insert(word, 1);
+            else
+            {
+                d.insert(word);
+            }
+        }
+        else if (!remove_it)
+        {
+            d.insert(word);
         }
         i++;
     }
 
-    std::pair<int, std::string> max_pair = ht.get_max();
-    std::cout << max_pair.second << " " << max_pair.first << std::endl;
+    d.print_most_frequent();
 
     return 0;
 }
