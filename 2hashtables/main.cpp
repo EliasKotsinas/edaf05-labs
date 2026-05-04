@@ -33,7 +33,12 @@ private:
         {
             h = 31 * h + c;
         }
-        return h % capacity;
+        return calcMod(h, capacity);
+    }
+
+    size_t calcMod(size_t x, size_t y)
+    {
+        return (x & (y - 1));
     }
 
     void rehash()
@@ -54,7 +59,7 @@ private:
 
                 while (table[index].state != State::EMPTY)
                 {
-                    index = (index + 1) % capacity;
+                    index = calcMod(index + 1, capacity);
                 }
 
                 table[index].key = old_table[i].key;
@@ -108,7 +113,7 @@ public:
                     first_tombstone = index;
                 }
             }
-            index = (index + 1) % capacity;
+            index = calcMod(index + 1, capacity);
         }
 
         size_t insert_index = (first_tombstone != -1) ? first_tombstone : index;
@@ -134,7 +139,7 @@ public:
                 table[index].state = State::TOMBSTONE;
                 return;
             }
-            index = (index + 1) % capacity;
+            index = calcMod(index + 1, capacity);
         }
     }
 
@@ -148,7 +153,7 @@ public:
             {
                 return true;
             }
-            index = (index + 1) % capacity;
+            index = calcMod(index + 1, capacity);
         }
         return false;
     }
