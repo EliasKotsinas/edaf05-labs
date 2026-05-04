@@ -6,6 +6,7 @@
 #include <array>
 #include <chrono>
 
+// Breadth-First Search
 int bfs(int startId, int endId, const std::vector<std::vector<int>> &adj, int numWords)
 {
     if (startId == endId)
@@ -40,6 +41,7 @@ int bfs(int startId, int endId, const std::vector<std::vector<int>> &adj, int nu
 
 int main()
 {
+    // Optimize standard I/O operations for speed
     std::ios_base::sync_with_stdio(false);
     std::cin.tie(NULL);
 
@@ -51,21 +53,25 @@ int main()
     auto startInput = std::chrono::high_resolution_clock::now();
 
     std::vector<std::string> words(wordCount);
-    std::unordered_map<std::string, int> wordToId;
+    std::unordered_map<std::string, int> wordToId; // Maps words to unique integer IDs
 
+    // Arrays to store character frequencies
     std::vector<std::array<int, 26>> fullWordFreq(wordCount, {0});
     std::vector<std::array<int, 26>> lastFourFreq(wordCount, {0});
 
+    // Read words and calculate letter frequencies
     for (int i = 0; i < wordCount; ++i)
     {
         std::cin >> words[i];
         wordToId[words[i]] = i;
 
+        // Count frequency of all characters in the word
         for (char c : words[i])
         {
             fullWordFreq[i][c - 'a']++;
         }
 
+        // Count frequency of the last four characters
         if (words[i].size() >= 4)
         {
             for (size_t k = words[i].size() - 4; k < words[i].size(); ++k)
@@ -76,9 +82,9 @@ int main()
     }
 
     auto endInput = std::chrono::high_resolution_clock::now();
-
     auto startGraph = std::chrono::high_resolution_clock::now();
 
+    // Adjacency list representation of the graph
     std::vector<std::vector<int>> adj(wordCount);
 
     // Build Graph
@@ -88,6 +94,7 @@ int main()
         {
             bool isConnected = true;
 
+            // Check if word j contains all required letters from the last 4 letters of word i
             for (int c = 0; c < 26; ++c)
             {
                 if (lastFourFreq[i][c] > fullWordFreq[j][c])
@@ -97,6 +104,7 @@ int main()
                 }
             }
 
+            // Draw a directed edge from i to j if the condition is met
             if (isConnected)
             {
                 adj[i].push_back(j);
@@ -105,9 +113,9 @@ int main()
     }
 
     auto endGraph = std::chrono::high_resolution_clock::now();
-
     auto startInstructions = std::chrono::high_resolution_clock::now();
 
+    // Process all search instructions
     for (int i = 0; i < instructionsCount; ++i)
     {
         std::string startWord, endWord;
