@@ -7,7 +7,7 @@
 \pagestyle{empty}
 
 \title{Word ladders report}
-\author{Author 1 and Author 2}
+\author{Elias Kotsinas and Max Tyrving}
 
 \begin{document}
   \maketitle
@@ -16,8 +16,17 @@
 
   \todo[inline]{Briefly comment the results, did the script say all your solutions were correct? Approximately how long time does it take for the program to run on the largest input? What takes the majority of the time?}
 
+  All the solutions were correct. The largest input took around 1.5 seconds to run. Building the graph took the majority of the running time. This is expected since building the graph involves a nested loop that compares all pairs of words, whereas the individual BFS searches are much faster.
+
   \section{Implementation details}
 
   \todo[inline]{How did you implement the solution? Which data structures were used? Which modifications to these data structures were used? What is the overall running time? Why?}
+  
+  To map words to unique IDs, a \texttt{std::unordered\_map<std::string, int>} was used. The graph was represented as an ajacency list using \texttt{vector<vector<int>>}. Letter frequencies were stored in \texttt{array<int, 26>} to optimize the validation of edges.
+  For each word, the frequency of all letters and the frequency of the letters in the word's last four characters were calculated. A directed edge is drawn from word u to v if all the last four letters in u is in v. This is verified by comparing the 
+  frequency arrays, which takes $O(26)$ operations per word pair, resulting in $O(N^2)$ time for the entire graph construction.
+  For each instruction, a Breadth-First Search is performed to find the length of the shortest path from the starting word to the ending word. If the destination node is reached, the distance is returned. Otherwise, "Impossible" is returned.
+  The overall running time was around 3.6 seconds. Constructing the graph has a time complexity of $O(N^2)$ since every pair of words is compared. The BFS algorithm has a time complexity of $O(N + M)$ per search, where N is the number of nodes and M is the number of edges. 
+  Therefore, the overall time complexity of the program is $O(N^2 + Q(N + M))$, where Q is the number of instructions. 
 
 \end{document}

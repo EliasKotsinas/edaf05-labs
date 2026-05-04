@@ -4,6 +4,7 @@
 #include <queue>
 #include <unordered_map>
 #include <array>
+#include <chrono>
 
 int bfs(int startId, int endId, const std::vector<std::vector<int>> &adj, int numWords)
 {
@@ -47,6 +48,8 @@ int main()
     if (!(std::cin >> wordCount >> instructionsCount))
         return 0;
 
+    auto startInput = std::chrono::high_resolution_clock::now();
+
     std::vector<std::string> words(wordCount);
     std::unordered_map<std::string, int> wordToId;
 
@@ -71,6 +74,10 @@ int main()
             }
         }
     }
+
+    auto endInput = std::chrono::high_resolution_clock::now();
+
+    auto startGraph = std::chrono::high_resolution_clock::now();
 
     std::vector<std::vector<int>> adj(wordCount);
 
@@ -97,6 +104,10 @@ int main()
         }
     }
 
+    auto endGraph = std::chrono::high_resolution_clock::now();
+
+    auto startInstructions = std::chrono::high_resolution_clock::now();
+
     for (int i = 0; i < instructionsCount; ++i)
     {
         std::string startWord, endWord;
@@ -116,6 +127,18 @@ int main()
             std::cout << result << "\n";
         }
     }
+
+    auto endInstructions = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> timeInput = endInput - startInput;
+    std::chrono::duration<double> timeGraph = endGraph - startGraph;
+    std::chrono::duration<double> timeInstructions = endInstructions - startInstructions;
+    std::chrono::duration<double> totalTime = endInstructions - startInput;
+
+    std::cerr << "Inläsning tid: " << timeInput.count() << " s\n";
+    std::cerr << "Grafbygge tid: " << timeGraph.count() << " s\n";
+    std::cerr << "BFS instructioner tid: " << timeInstructions.count() << " s\n";
+    std::cerr << "Total tid: " << totalTime.count() << " s\n";
 
     return 0;
 }
