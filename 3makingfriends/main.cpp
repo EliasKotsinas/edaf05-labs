@@ -1,28 +1,27 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
-class Tree
-{
-    Node nodes[];
-};
+#include <vector>
+#include <unordered_map>
 
 class Node
 {
-    int value;
-
-public:
-    Node(int value)
-    {
-        this->value = value;
-    }
-    Vertice vertices[];
+    public:
+        std::vector<Vertice> vertices;
 };
 
 class Vertice
 {
     int weight;
-    std::tuple<Node, Node> nodes;
+    int n1;
+    int n2;
+    public:
+        Vertice(int n1, int n2, int weight)
+        {
+            this->n1 = n1;
+            this->n2 = n2;
+            this->weight = weight;
+        }
 };
 
 int main()
@@ -34,7 +33,7 @@ int main()
     std::cin >> people;
     std::cin >> pairs;
 
-    Tree trees = new Tree[people];
+    std::unordered_map<int, Node> graph;
 
     std::string line;
     while (std::getline(std::cin, line))
@@ -44,16 +43,20 @@ int main()
         int firstNode, secondNode, weight;
         ss >> firstNode >> secondNode >> weight;
 
-        Node n1 = Node(firstNode);
-        Node n2 = Node(secondNode);
+        Node n1 = Node();
+        Node n2 = Node();
+
+        n1.vertices.push_back(Vertice(firstNode, secondNode, weight));
+        n2.vertices.push_back(Vertice(firstNode, secondNode, weight));
+
+        graph.insert({firstNode, n1});
+        graph.insert({secondNode, n2});
     }
 
     return 0;
 }
 
-int mst(Tree trees[])
+int mst()
 {
-    for (auto tree : trees)
-    {
-    }
+    
 }
