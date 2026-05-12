@@ -3,26 +3,109 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <utility>
 
-class Node
+struct Edge
 {
-    public:
-        std::vector<Vertice> vertices;
+    int u, v, weight;
 };
 
-class Vertice
+struct UnionFind
 {
-    int weight;
-    int n1;
-    int n2;
-    public:
-        Vertice(int n1, int n2, int weight)
+    std::vector<int> parent;
+    std::vector<int> size;
+
+    UnionFind(int n)
+    {
+        parent.resize(n + 1);
+        size.resize(n + 1, 1);
+
+        for (int i = 0; i <= n; i++)
         {
-            this->n1 = n1;
-            this->n2 = n2;
-            this->weight = weight;
+            parent[i] = i;
         }
+    }
+
+    int find(int i)
+    {
+        if (parent[i] == i)
+        {
+            return i;
+        }
+
+        return parent[i] = find(parent[i]);
+    }
+
+    bool unite(int i, int j)
+    {
+        int root_i = find(i);
+        int root_j = find(j);
+
+        if (root_i == root_j)
+        {
+            return false;
+        }
+
+        if (size[root_i] < size[root_j])
+        {
+            std::swap(root_i, root_j);
+        }
+
+        parent[root_j] = root_i;
+        size[root_i] += size[root_j];
+
+        return true;
+    }
 };
+
+int mst(std::vector<Edge> edges, int people)
+{
+    int components = people;
+    int totalWeight = 0;
+    UnionFind uf(people);
+
+    while (components > 1)
+    {
+        std::vector<int> cheapest(people + 1, -1);
+
+        for (int i = 0; i < edges.size(); i++)
+        {
+            int root_u = uf.find(edges[i].u);
+            int root_v = uf.find(edges[i].v);
+
+            if (root_u != root_v)
+            {
+                if (cheapest[root_u] == -1 || edges[i].weight < edges[cheapest[root_u]].weight)
+                {
+                    cheapest[root_u] = i;
+                }
+
+                if (cheapest[root_v] == -1 || edges[i].weight < edges[cheapest[root_v]].weight)
+                {
+                    cheapest[root_v] = i;
+                }
+            }
+        }
+
+        for (int i = 1; i <= people; i++)
+        {
+            if (cheapest[i] != -1)
+            {
+                int edge_idx = cheapest[i];
+
+                bool merged = uf.unite(edges[edge_idx].u, edges[edge_idx].v);
+
+                if (merged)
+                {
+                    totalWeight += edges[edge_idx].weight;
+                    components--;
+                }
+            }
+        }
+    }
+
+    return totalWeight;
+}
 
 int main()
 {
@@ -33,30 +116,18 @@ int main()
     std::cin >> people;
     std::cin >> pairs;
 
-    std::unordered_map<int, Node> graph;
+    std::vector<Edge> edges;
 
-    std::string line;
-    while (std::getline(std::cin, line))
+    for (int i = 0; i < pairs; i++)
     {
-        std::stringstream ss(line);
+        int u, v, weight;
+        std::cin >> u >> v >> weight;
 
-        int firstNode, secondNode, weight;
-        ss >> firstNode >> secondNode >> weight;
-
-        Node n1 = Node();
-        Node n2 = Node();
-
-        n1.vertices.push_back(Vertice(firstNode, secondNode, weight));
-        n2.vertices.push_back(Vertice(firstNode, secondNode, weight));
-
-        graph.insert({firstNode, n1});
-        graph.insert({secondNode, n2});
+        edges.push_back({u, v, weight});
     }
 
-    return 0;
-}
+    int result = mst(edges, people);
+    std::cout << result;
 
-int mst()
-{
-    
+    return 0;
 }
