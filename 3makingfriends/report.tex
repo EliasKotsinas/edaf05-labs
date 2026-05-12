@@ -7,7 +7,7 @@
 \pagestyle{empty}
 
 \title{Making Friends Report}
-\author{Author 1 and Author 2}
+\author{Elias Kotsinas and Max Tyrving}
 
 \begin{document}
   \maketitle
@@ -15,9 +15,17 @@
   \section{Results}
 
   \todo[inline]{Briefly comment the results, did the script say all your solutions were correct? Approximately how long time does it take for the program to run on the largest input? What takes the majority of the time?}
+  
+  The test script confirmed that all solutions were correct. On the largest input, the program runs in 1.8 seconds. The majority of the execution time is spent iterating through the massive edge list and updating the cheapest outgoing edges during the initial phases of the algorithm.
 
   \section{Implementation details}
 
   \todo[inline]{How did you implement the solution? Which data structures were used? Which modifications to these data structures were used? What is the overall running time? Why?}
 
+  The solution uses Boruvka's algorithm to find the minimal spanning tree and calculate the minimum time required to connect all people. The graph is represented as a single flat list of edges (\texttt{std::vector<Edge>}) containing the two nodes and the weight.
+  To keep track of which component each person belongs to, a Union-Find data structure was implemented. During each phase of the algorithm, an array (\texttt{std::vector<int> cheapest}) is used to temporarily store the index of the minimum-weight outgoing edge for each connected component.
+  The Union-Find data structure was modified with two optimazations: Path Compression (in the `find' function) and Union by Size (in the `unite' function). These modifications flatten the trees and ensure they remain balanced, reducing the time complexity of finding and merging components
+  to near $O(1)$. Furthermore, the edge vector uses `reserve()' to pre-allocate memory, preventing reallocations during input parsing. The overall running time of the algorithm was 3.1 seconds and the time complexity is $O(M \log N)$, where $M$ is the number of edges and $N$ is the number of nodes.
+  This is because in each phase of the algorithm, every component finds its cheapest outgoing edge and merges with another component. This guarantees that the total number of components is at least halved in every phase. Therefore, the outer loop runs at most $O(\log N)$ times. Inside the loop, the 
+  algorithm iterates through all $M$ edges exactly once to find the cheapest connections, and then iterates through the components to merge them. Multiplying the $O(M)$ work per phase by the maximum of $O(\log N)$ phases gives the time complexity of $O(M \log N)$.
 \end{document}
