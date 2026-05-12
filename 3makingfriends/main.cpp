@@ -58,7 +58,7 @@ struct UnionFind
     }
 };
 
-int mst(std::vector<Edge> edges, int people)
+int mst(std::vector<Edge> &edges, int people)
 {
     int components = people;
     int totalWeight = 0;
@@ -109,6 +109,8 @@ int mst(std::vector<Edge> edges, int people)
 
 int main()
 {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
 
     int people;
     int pairs;
@@ -117,6 +119,7 @@ int main()
     std::cin >> pairs;
 
     std::vector<Edge> edges;
+    edges.reserve(pairs);
 
     for (int i = 0; i < pairs; i++)
     {
